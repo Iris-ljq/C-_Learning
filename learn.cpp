@@ -5,6 +5,7 @@ using namespace std;
 #include <vector>  // 引入 vector 头文件
 
 int main() {
+    
     /*enum color { red, blue=5, green } a;
     a = green;
     cout << a << endl;
