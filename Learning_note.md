@@ -129,5 +129,156 @@ void f(int n)
 
     c++基本操作中，加法只有一个名字+，但是既可以执行整数值的加法，也可以执行浮点数的加法，还能执行这些类型彼此之间的加法
 ### 自动重载解析
+调用函数fct时，编译器依据考察实参类型与作用域中名为fct的哪个函数的形参类型最匹配，找到最佳匹配时调用该函数。
+```cpp
+void print(double);
+void print(long);
+void f()
+{
+    print(1L); //print(long)
+    print(1.0);//print(double)
+    print(1);//错误，二义性，无法确定调用哪个函数
+}
+```
+# 第16章 类
+## 16.2 类基础
+- 一个类由一组成员构成。常见的成员类别是数据成员和成员函数。<br>
+- public成员提供类的接口，private成员提供实现细节。
+- struct是成员默认为public的class。
+```
+类是一种将抽象转换为用户定义类型的C++工具，将数据表示和操纵数据的方法组合成一个整洁的包。
 
+类规范由两个部分组成：
+1.类声明：以数据成员的方式描述数据部分，以成员函数（被称为方法）的方式描述公有接口。（类的蓝图）
+2.类方法定义：描述如何实现类成员函数。（细节）
+```
+```c++
+class X{
+    private: //类的表示（实现）是私有的
+        int m;
+    public: //用户接口是公有的
+        X(int i=0):m{i}{} //构造函数（初始化数据成员m）
+        int mf(int i) //成员函数
+        {
+            int old=m;
+            m = i; //设置一个新值
+            return old; //返回旧值
+        }
+};
+X var{7}; //一个X类型的变量，初始化为7
+int use(X var,X* ptr)
+{
+    int x = var.mf(7); //使用.(点)访问
+    int y = ptr->mf(9); //使用->(箭头)访问
+    int z = var.m; //错误：不能访问私有成员
+}
+```
+接口（类声明）放在头文件中，实现（类方法的代码）放在源代码文件中。
+```c++
+#ifndef STOCK00_H_
+#define STOCK00_H_
 
+#include <string>
+class Stock //class declaration
+{
+private:
+    std::string company;
+    double share_val;
+    void set_tot(){total_val=shares*share_val;}
+public:
+    void acquire(const std::string & co, long n,double pr);
+} ;
+#endif //#ifndef和endif防止多次包含同一个文件
+```
+
+1. **访问控制**  
+   使用类对象的程序都可以直接访问公有部分，但只能通过公有成员函数来访问对象的私有成员。公有成员函数是程序和对象的私有成员之间的桥梁，提供了对象和程序之间的接口。  
+   类设计尽可能将公有接口与实现细节分开，公有接口表示设计的抽象组件，将实现细节放在一起并将它们与抽象分开叫作`封装`。**封装**例子：**数据隐藏**（将数据放在类的私有部分中）；将实现细节隐藏在私有部分中，就像stock类对set_tot()做的那样；将类函数定义和类声明放在不同文件中。
+ 
+2. 控制对成员的访问：公有还是私有
+   由于隐藏数据是OOP（一种编程风格）主要目标之一 ，因此数据项通常放在私有部分，组成类接口的成员函数放在公有部分。成员函数也可放在私有部分，通常使用私有成员函数来处理不属于公有接口的实现细节。   
+   `不必在类声明中使用关键字private，因为这是类对象的默认访问控制：`
+   ```c++
+   class World
+   {
+        float mass; 
+        char name[20];//private by default
+    public:
+        void tellall(void);
+        ...
+   };
+   ```
+### 实现类成员函数
+与常规函数不同的特征：  
+1. 定义成员函数时，使用作用域解析运算符：：来标识函数所属类；
+2. 类方法可以访问类的private组件。  
+   
+类方法的完整名称中包括类名，`Stock::update()`是函数限定名,`update()`是全名的缩写（非限定名）,只能在类作用域中使用。  
+2.特征是方法可以访问类的私有成员，如show()方法:
+```c++
+std::cout<<"Company:"<<company
+<<" Shares:"<<shares<<endl
+<<" Share Price:$"<<share_val
+<<" Total Worth:$"<<total_val<<endl;
+```
+company\shares都是Stock类的私有成员，不能使用非成员函数访问。  
+类方法example:
+```c++
+//stock00.cpp
+#include "stock00.h"
+#include<iostream>
+
+void Stock::acquire(const std::string &co,long n,double pr)
+{
+    company = co;
+    if(n<0)
+    {
+        std::cout<<"Number of shares can't be negative; "
+        <<company<<" shares set to 0."<<std::endl;
+        shares = 0;
+    }
+    else
+        shares = n;
+    share_val = pr;
+    set_tot();
+}
+```
+3. 方法使用哪个对象
+   创建对象：
+   ```
+   Stock kate,joe;//声明类变量
+   ```
+   通过成员运算符使用对象的成员函数：
+   ```
+   kate.show();
+   joe.show();
+   ```
+### 修改实现
+ostream类包含可用于控制格式的成员函数.使用setf()可避免科学计数法
+```
+std::cout.setf(std::ios_base::fixed,std::ios_base::floatfield);
+```
+控制格式：`std::cout.precision(3);`显示三位小数  
+格式修改一直有效，直到再次修改，因此可能影响客户程序中的后续输出。因此，show()应重置格式信息，使其恢复到被调用前的状态。
+```c++
+std::streamsize prec = std::cout.precision(3);
+std::cout.precision(prec);//reset
+```
+## 类的构造函数和析构函数
+**类构造函数**：专门用于构造新对象、将值赋给它们的数据成员。C++为成员函数提供名称和使用方法，程序员提供方法定义。`没有返回值和声明类型`
+```cpp
+Stock::Stock(const string& co,long n,double pr)
+{
+    company = co;
+    if(n<0)
+    {
+      std::cerr<<"Number of shares can't be negative; "
+        <<company<<" shares set to 0."<<std::endl;
+   shares = 0;
+    }
+    else
+    shares = n;
+    share_val = pr;
+    set_tot();
+}
+程序声明对象时，会自动调用构造函数
